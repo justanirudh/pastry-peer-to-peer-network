@@ -1,6 +1,6 @@
 defmodule PastryNode do
     use GenServer
-    #state: nodeid, leafset[numerical value, hex value, node id], routing_table
+    #state: nodeid, leafset, routing_table, neighbourhoodset
     #b = 4, L = 16, M = 32
 
     #add leaf set
@@ -11,6 +11,11 @@ defmodule PastryNode do
     #add routing table
     def handle_call({:routing_table, routing_table}, _from, state) do
         {:reply, :ok, {elem(state, 0),elem(state, 1),routing_table }} 
+    end
+
+    #add neighset set
+    def handle_call({:neighset, neighset}, _from, state) do
+        {:reply, :ok, {elem(state, 0),elem(state, 1), elem(state, 2),neighset }} 
     end
 
     # #initialize all nodes data into node's state
