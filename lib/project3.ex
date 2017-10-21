@@ -1,5 +1,7 @@
 defmodule Pastry do
-  #routing table
+  #LEAFSET
+  #[{num1, hex1, <pid1>},{num2,hex2,<pid2>, ....} ]
+  #ROUTING TABLE
   #map of maps
   # current node: ABCDE...32 DIGITS
   # 0 -> ...
@@ -21,15 +23,18 @@ defmodule Pastry do
     #list of all pids
     nodes = spawn_pastry(num)
     node_hexes = 1..num |> Enum.map(fn i -> (:crypto.hash(:md5, Integer.to_string(i)) |> Base.encode16()) end)
-    #send entire list to all nodes to construct leaf set and routing table 
+
     #TODO: need to change this after implementing the 'join' functionality?
     IO.inspect "creating leafsets..."
     LeafSets.send(nodes, l, num, node_hexes)
     IO.inspect "creating routing tables..."
     RoutingTables.send(nodes, node_hexes, num ,l)
+    #Neighbourhood set: M = 32. Take random 32 elements from the nodes. 
 
     # Enum.each(nodes, fn(pid) -> GenServer.call(pid, {:all_nodes, nodes, num})  end)
     IO.inspect GenServer.call(Enum.at(nodes, 50), :show)
+
+
 
   end
 

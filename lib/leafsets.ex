@@ -4,14 +4,25 @@ defmodule LeafSets do
         if(ind == num) do
           :ok
         else
-          #TODO: implement wraparound for edge values
+          #TODO: no wraparound reqd. Just handle edge values
+          # num_start = ind + 1
+          # num_end = num_start + div(l,2) - 1
+          # list_right = Enum.slice(sorted, num_start..num_end)
           num_start = ind + 1
-          num_end = num_start + div(l,2) - 1
-          list_right = Enum.slice(sorted, num_start..num_end)
+          amt = div(l,2)
+          list_right = Enum.slice(sorted, num_start, amt)
           
-          num_start = ind - div(l,2)
-          num_end = ind - 1
-          list_left = Enum.slice(sorted, num_start..num_end)
+          # num_start = ind - div(l,2)
+          # num_end = ind - 1
+          # list_left = Enum.slice(sorted, num_start..num_end)
+          num_start =
+            if ind - div(l,2) < 0 do
+              0
+            else
+              ind - div(l,2)
+            end
+          amt = div(l,2)
+          list_left = Enum.slice(sorted, num_start, amt)
           
           combined = list_left ++ list_right
           

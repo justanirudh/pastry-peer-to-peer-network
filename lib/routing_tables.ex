@@ -83,7 +83,7 @@ defmodule RoutingTables do
     end
   end
 
-  defp send_routing_tables_aux(sorted, ind, num, l) do
+  defp send_aux(sorted, ind, num, l) do
     if(ind == num) do
       :ok
     else
@@ -98,17 +98,18 @@ defmodule RoutingTables do
       curr_pid = elem(Enum.at(sorted, ind), 1)
       :ok = GenServer.call(curr_pid, {:routing_table, map})
 
-      send_routing_tables_aux(sorted, ind + 1, num, l)
+      send_aux(sorted, ind + 1, num, l)
     end
 
   end
 
   #32 rows (one for each letter) and 16 columns (one for each value each letter can take)
+  # .... <- . -> .....
   def send(nodes, node_hexes, num, l) do
     zipped = Enum.zip([node_hexes, nodes]) #numerical value, hex value, node id
     sorted = Enum.sort(zipped, fn(i,j) -> elem(i, 0) < elem(j,0) end)
-    IO.inspect sorted
-    send_routing_tables_aux(sorted, 0, num, l)  
+    #IO.inspect sorted
+    send_aux(sorted, 0, num, l)  
   end
 
     
