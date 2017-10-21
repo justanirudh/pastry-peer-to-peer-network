@@ -18,15 +18,24 @@ defmodule Pastry do
     1..num |> Enum.map(fn i -> elem(GenServer.start_link(PastryNode, :crypto.hash(:md5, Integer.to_string(i)) |> Base.encode16()), 1) end) 
   end
 
+
+  defp send_msg(nodes, val) do
+    pid = Enum.random(nodes)
+    key = :crypto.hash(:md5, val) |> Base.encode16()
+    GenServer.cast pid, {:msg, key, val}
+  end
+
   def main(args) do
     num = 1000
     l = 16 # 2^b in leafset, 8 nodeids less than and 8 nodeids greater than; in outing table, each row has max 15 cols
     m = 32
+    msg = "hello"
     self() |> Process.register(:master) #register master
     #list of all pids
     nodes = spawn_pastry(num)
     node_hexes = 1..num |> Enum.map(fn i -> (:crypto.hash(:md5, Integer.to_string(i)) |> Base.encode16()) end)
 
+    #Pastry setup
     #TODO: need to change this after implementing the 'join' functionality?
     IO.inspect "creating leafsets..."
     LeafSets.send(nodes, l, num, node_hexes)
@@ -36,7 +45,9 @@ defmodule Pastry do
     IO.inspect "creating neighbourhoodsets..."
     NeighbourhoodSets.send(nodes, m, num, node_hexes)
 
-    # Enum.each(nodes, fn(pid) -> GenServer.call(pid, {:all_nodes, nodes, num})  end)
+    #send msg to random node of pastry
+    send_msg(nodes, msg)
+
     IO.inspect GenServer.call(Enum.at(nodes, 50), :show)
 
   end

@@ -18,15 +18,15 @@ defmodule PastryNode do
         {:reply, :ok, {elem(state, 0),elem(state, 1), elem(state, 2),neighset }} 
     end
 
-    # #initialize all nodes data into node's state
-    # def handle_call({:all_nodes, list, num}, _from, nodeid) do
-    #     #initialize routing table
-    #     {:reply, :ok, {nodeid, list, num}} 
-    # end
-
     #show
     def handle_call(:show, _from, st) do
         {:reply, st, st} 
+    end
+
+
+
+    def handle_cast({:msg, key, val}, state) do
+        
     end
 
 end
