@@ -18,18 +18,18 @@ defmodule Pastry do
     1..num |> Enum.map(fn i -> elem(GenServer.start_link(PastryNode, :crypto.hash(:md5, Integer.to_string(i)) |> Base.encode16()), 1) end) 
   end
 
-
   defp send_msg(nodes, val) do
     pid = Enum.random(nodes)
     key = :crypto.hash(:md5, val) |> Base.encode16()
+    IO.puts "key is #{key}"
     GenServer.cast pid, {:msg, key, val, 0} #0 is number of hops till now
   end
 
   def main(args) do
-    num = 1000
+    num = 100
     l = 16 # 2^b in leafset, 8 nodeids less than and 8 nodeids greater than; in outing table, each row has max 15 cols
     m = 32
-    msg = "hello"
+    msg = "hello123"
 
     self() |> Process.register(:master) #register master
     
