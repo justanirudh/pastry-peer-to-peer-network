@@ -1,7 +1,6 @@
 # Pastry
 
 
-
 L = 16
 M = 32
 num_nodes num_requests avg_hops
