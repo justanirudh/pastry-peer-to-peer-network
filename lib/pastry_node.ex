@@ -23,9 +23,15 @@ defmodule PastryNode do
         {:reply, st, st} 
     end
 
+    #activate to send messages to other peers
+    def handle_call({:activate, nodes, num_reqs}, _from, st) do
+        {:ok, pid} = Task.start_link fn -> RoutingUtils.send_messages(nodes, num_reqs, 0) end
+        {:reply, :ok, st} 
+    end
+
     def handle_cast({:stop, key, val, num_hops}, state) do
         #TODO: save key, val in current node
-        IO.puts "terminal nodeid is #{elem(state, 0)}"
+        # IO.puts "terminal nodeid is #{elem(state, 0)}"
         send :master, {:num_hops, num_hops}
         {:noreply, state}
     end
@@ -33,17 +39,16 @@ defmodule PastryNode do
     def handle_cast({:msg, key, val, num_hops}, state) do
         #routing algorithm
         curr_hex = elem(state, 0)
-        IO.puts "msg reached #{curr_hex}" 
+        # IO.puts "msg reached #{curr_hex}" 
         key_int = elem(Integer.parse(key, 16), 0)
         leafset = elem(state, 1)
         leafset_size = length(leafset)
         leafset_min = elem(Enum.at(leafset, 0), 0)
         leafset_max = elem(Enum.at(leafset, leafset_size - 1), 0)
         status = if key_int >= leafset_min && key_int <= leafset_max do
-            #TODO: change this back to forwarding and keep count on each node of number of times msg heard. 
-            #If number > 1, stop
+            #TODO: change this back to forwarding and keep count on each node of number of times msg heard. #If number > 1, stop
             #GAME OVER (else infinte loop)
-            IO.puts "in leafset table of #{curr_hex}"
+            # IO.puts "in leafset table of #{curr_hex}"
             #setting first guy as solution
             dist_pid = elem(Enum.at(leafset, 0), 2) 
             min_diff = abs(leafset_min - key_int)
@@ -60,7 +65,7 @@ defmodule PastryNode do
                 first_diff = String.at(key, com_prefix_len)
                 internal_tup = Map.get(internal_map, first_diff)
                 if internal_tup != nil do
-                    IO.puts "in routing table of #{curr_hex}"
+                    # IO.puts "in routing table of #{curr_hex}"
                     dist_pid = elem(internal_tup, 1)
                     GenServer.cast dist_pid, {:msg, key, val, num_hops + 1}
                 else
@@ -73,7 +78,7 @@ defmodule PastryNode do
 
         if status == :current do
             #TODO: save key, val in current node
-            IO.puts "terminal nodeid is #{elem(state, 0)}"
+            # IO.puts "terminal nodeid is #{elem(state, 0)}"
             send :master, {:num_hops, num_hops}
         end
         {:noreply, state}

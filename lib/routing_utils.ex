@@ -1,4 +1,7 @@
 defmodule RoutingUtils do
+    @range 10
+    #TODO: change it back to 1000000
+    @sleep_time 1 # in microseconds
     
     def get_min_dist(leafset, key_int, ind, dist_pid, min_diff, leafset_size) do
         if ind == leafset_size do
@@ -61,6 +64,20 @@ defmodule RoutingUtils do
                 GenServer.cast pid, {:msg, key, val, num_hops + 1} 
                 :sent
             :failure -> :current
+        end
+    end
+
+
+    def send_messages(nodes, num_reqs, ind) do
+        if(ind == num_reqs) do
+            :ok
+        else
+            pid = Enum.random nodes
+            val = :rand.uniform(@range) |> :crypto.strong_rand_bytes |> Base.encode64
+            key = :crypto.hash(:md5, val) |> Base.encode16()
+            GenServer.cast pid, {:msg, key, val, 0} #0 is number of hops till now
+            :timer.sleep(@sleep_time)
+            send_messages(nodes, num_reqs, ind + 1)
         end
     end
 
