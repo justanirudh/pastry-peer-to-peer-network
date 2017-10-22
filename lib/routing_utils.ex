@@ -15,12 +15,20 @@ defmodule RoutingUtils do
         end
     end
 
-    #TODO: implement this
     #returns list of {hex, pid}
     defp get_union_all(state) do
         leafset = elem(state, 1)
+        leafset_res = Enum.map(leafset, fn {_, h, p} -> {h,p} end) #1
+        
         routing_table = elem(state, 2)
+        rt_vals = Map.values routing_table
+        routing_table_res = Enum.map(rt_vals, fn map -> Map.values map end) |> List.flatten #2
+        
         neighset = elem(state, 3)
+        neighset_res =  Enum.map(neighset, fn {_, h, p} -> {h,p} end) #1
+
+        (leafset_res ++ routing_table_res ++ neighset_res) |> Enum.uniq
+
     end
 
     defp find_next_node(union_all, len, min_com_prefix_len, min_num_diff, key,key_int,ind) do
