@@ -11,7 +11,6 @@ defmodule RoutingTables do
       com_prefix = Utils.lcp([hex, curr_hex]) 
       com_prefix_len = String.length(com_prefix)
 
-
       #If map does not have a map corresponding to the common prefix length
       map = if Map.get(map, com_prefix_len) == nil do
         Map.put(map, com_prefix_len, %{})#put empty map

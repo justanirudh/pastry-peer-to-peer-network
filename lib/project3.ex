@@ -26,10 +26,10 @@ defmodule Pastry do
   end
 
   def main(args) do
-    num = 100
+    num = 1000
     l = 16 # 2^b in leafset, 8 nodeids less than and 8 nodeids greater than; in outing table, each row has max 15 cols
     m = 32
-    msg = "hello123"
+    msg = "hello123dskfdskfjsdlkfjsl"
 
     self() |> Process.register(:master) #register master
     

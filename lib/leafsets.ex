@@ -1,5 +1,6 @@
 defmodule LeafSets do
     
+  #TODO: will leafset of a node have itself
   #TODO: no wraparound required for leafset and neighbourhood set?
     defp send_aux(sorted, ind, num, l) do
         if(ind == num) do
