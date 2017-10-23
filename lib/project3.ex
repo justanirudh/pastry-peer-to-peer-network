@@ -71,7 +71,7 @@ end
     IO.inspect GenServer.call(Enum.at(nodes, 50), :show)
 
     #add 1 node
-    # NetworkJoin.add_node(nodes, node_hexes, num)
+    # NetworkJoin.add_node(nodes, num)
 
     #activate nodes to start sending messages to each other
     activate_peers(nodes, 0, num, num_reqs)

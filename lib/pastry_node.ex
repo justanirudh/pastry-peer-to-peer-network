@@ -1,6 +1,6 @@
 defmodule PastryNode do
     use GenServer
-    #map manual_pastry: nodeid, leafset, routing_table, neighbourhoodset
+    #state manual_pastry: nodeid, leafset, routing_table, neighbourhoodset
     #map bootstrap pastry: %{:nodeid => hex, :leaf_set => nil, :routing_table => nil, :neigh_set => nil}
     #b = 4, L = 16, M = 32
     #TODO: change usage of set to usage of map
