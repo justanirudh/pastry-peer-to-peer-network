@@ -54,6 +54,34 @@ defmodule PastryNode do
         {:noreply, map}
     end
 
+
+    def handle_cast({:add_me, sender_nodeid, sender_pid}, map) do
+        #add in leafset
+        leaf_set = Map.get(map, :leaf_set)
+        sender_nodeid_int = Integer.parse(sender_nodeid, 16) |> elem(0)
+        leaf_set = RoutingUtils.add_in_leaf_set(leaf_set, @l, sender_nodeid_int, sender_nodeid, sender_pid)
+        map = Map.put(map, :leaf_set, leaf_set)
+        #add in routing table
+
+        #add in neighset
+        
+        {:noreply, map}
+    end
+
+    #propgate yourself to all nodes in state
+    def handle_cast(:propagate, map) do
+        curr_pid = self()
+        if(Map.get(map, :leaf_set) != [] && Map.get(map, :neigh_set) != []) do
+            all_nodes = RoutingUtils.get_union_all(map)
+            hex = Map.get(map, :nodeid)
+            Enum.each(all_nodes, fn {_, pid} -> GenServer.cast pid, {:add_me, hex, curr_pid}  end)
+        else
+            IO.puts "Either leaf set or neighbourhood set are not populated. Waiting for them..."
+            :timer.sleep(1000)
+            GenServer.cast curr_pid, :propagate
+        end
+    end
+
     #received neighbourhood set
     def handle_cast({:neigh_set, neigh_set, {sender_proxid, sender_nodeid, sender_pid}}, map) do
         #Does not matter. at worst, the set will have random elements
@@ -61,7 +89,6 @@ defmodule PastryNode do
         if(neigh_set_len < @m) do
             #insert {sender_proxid, sender_nodeid, sender_pid} in neigh_set sortedly
             neigh_set = RoutingUtils.insert_sortedly(neigh_set, {sender_proxid, sender_nodeid, sender_pid}, neigh_set_len)
-            {:noreply, Map.put(map, :neigh_set, neigh_set)}   
         else
             neigh_set_min = elem(Enum.at(neigh_set, 0), 0)
             neigh_set_max = elem(Enum.at(neigh_set, neigh_set_len - 1), 0)
@@ -69,50 +96,19 @@ defmodule PastryNode do
                 #insert and delete from edge
                 neigh_set = RoutingUtils.insert_sortedly(neigh_set, {sender_proxid, sender_nodeid, sender_pid}, neigh_set_len)
                 neigh_set = List.delete_at(neigh_set, neigh_set_len)
-                {:noreply, Map.put(map, :neigh_set, neigh_set)}
-            else
-                #dont add
-                {:noreply, map}
-            end
-            
+            end    
         end
+        {:noreply, Map.put(map, :neigh_set, neigh_set)}
     end
 
     #received leaf set
     def handle_cast({:leaf_set, leaf_set, {sender_nodeid_int, sender_nodeid, sender_pid}}, map) do
         #receiver's leaf_set is empty
-        leaf_set_len = length(leaf_set)
-        if(leaf_set_len < @l) do
-            #insert {sender_nodeid_int, sender_nodeid, sender_pid} in leaf_set sortedly
-            leaf_set = RoutingUtils.insert_sortedly(leaf_set, {sender_nodeid_int, sender_nodeid, sender_pid}, leaf_set_len)
-            {:noreply, Map.put(map, :leaf_set, leaf_set)}   
-        else
-            leaf_set_min = elem(Enum.at(leaf_set, 0), 0)
-            leaf_set_max = elem(Enum.at(leaf_set, leaf_set_len - 1), 0)
-            if sender_nodeid_int > leaf_set_min && sender_nodeid_int < leaf_set_max do
-                #insert and delete from edge
-                leaf_set = RoutingUtils.insert_sortedly(leaf_set, {sender_nodeid_int, sender_nodeid, sender_pid}, leaf_set_len)
-                leaf_set = List.delete_at(leaf_set, leaf_set_len)
-                {:noreply, Map.put(map, :leaf_set, leaf_set)}
-            else
-                #dont add
-                {:noreply, map}
-            end
-            
-        end
+        leaf_set = RoutingUtils.add_in_leaf_set(leaf_set, @l, sender_nodeid_int, sender_nodeid, sender_pid)
+        {:noreply, Map.put(map, :leaf_set, leaf_set)}
     end
 
-    def handle_cast(:propagate, map) do
-        if(Map.get(map, :leaf_set) != [] && Map.get(map, :neigh_set) != []) do
-            
-        else
-            IO.puts "Either leaf set or neighbourhood set are not populated. Waiting for them..."
-            :timer.sleep(1000)
-            curr_pid = self()
-            GenServer.cast curr_pid, :propagate
-        end
-    end
-
+    #received routing table
     def handle_cast({:routing_table, routing_row, row_num, sender_nodeid, sender_pid, is_last}, map) do
         #1. add sender's info to routing table, will go in the row that just got added
         com_prefix_len = Utils.lcp([Map.get(map, :nodeid), sender_nodeid]) |> String.length
@@ -129,6 +125,7 @@ defmodule PastryNode do
         {:noreply, map}
     end
 
+    #ROUTING
     #stop and send leaf_set and routing table
     def handle_cast({:stop_nodeid, new_nodeid, new_pid, num_hops}, map) do
         curr_pid = self()

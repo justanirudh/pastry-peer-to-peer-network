@@ -19,7 +19,7 @@ defmodule RoutingUtils do
     end
 
     #returns list of {hex, pid}
-    defp get_union_all(map) do
+    def get_union_all(map) do
         leaf_set =  Map.get(map, :leaf_set)
         leaf_set_res = Enum.map(leaf_set, fn {_, h, p} -> {h,p} end) #1
         
@@ -117,6 +117,24 @@ defmodule RoutingUtils do
             List.insert_at(leaf_set, index, {sender_nodeid_int, sender_nodeid, sender_pid})
         end
         
+    end
+
+
+    def add_in_leaf_set(leaf_set, set_size, sender_nodeid_int, sender_nodeid, sender_pid) do
+        leaf_set_len = length(leaf_set)
+        if(leaf_set_len < set_size) do
+            #insert {sender_nodeid_int, sender_nodeid, sender_pid} in leaf_set sortedly
+            leaf_set = insert_sortedly(leaf_set, {sender_nodeid_int, sender_nodeid, sender_pid}, leaf_set_len)   
+        else
+            leaf_set_min = elem(Enum.at(leaf_set, 0), 0)
+            leaf_set_max = elem(Enum.at(leaf_set, leaf_set_len - 1), 0)
+            if sender_nodeid_int > leaf_set_min && sender_nodeid_int < leaf_set_max do
+                #insert and delete from edge
+                leaf_set = RoutingUtils.insert_sortedly(leaf_set, {sender_nodeid_int, sender_nodeid, sender_pid}, leaf_set_len)
+                leaf_set = List.delete_at(leaf_set, leaf_set_len)
+            end
+        end
+        leaf_set
     end
 
 end
