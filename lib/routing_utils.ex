@@ -73,9 +73,14 @@ defmodule RoutingUtils do
             {:success, pid} -> 
                 #send routing table to new node
                 routing_row = Map.get(map, :routing_table) |> Map.get(num_hops)
+                if routing_row == nil do
+                    routing_row = %{}
+                end
+                IO.inspect "routing row:"
+                IO.inspect routing_row
                 GenServer.cast new_pid, {:routing_table, routing_row, num_hops, curr_nodeid, curr_pid, :not_last}
                 #forward to next pid
-                GenServer.cast pid, {:stop_nodeid, new_nodeid, new_pid, num_hops + 1}
+                GenServer.cast pid, {:add_node, new_nodeid, new_pid, num_hops + 1}
                 :sent
             :failure -> :current
         end
@@ -135,17 +140,6 @@ defmodule RoutingUtils do
             end
         end
         leaf_set
-    end
-
-    def loop(ind, len) do
-        if(ind == len) do
-            :ok
-        else
-            receive do
-                :added -> loop(ind +1, len)
-            end
-        end
-
     end
 
 end

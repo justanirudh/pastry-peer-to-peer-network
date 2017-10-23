@@ -26,6 +26,8 @@ defmodule LeafSets do
           list_left = Enum.slice(sorted, num_start, amt)
           
           combined = list_left ++ list_right
+          #TODO: still leafset has itself. hmm
+          combined = List.delete combined, Enum.at(sorted, ind) #Just to be sure
           
           curr = elem(Enum.at(sorted, ind), 2)
           :ok = GenServer.call(curr, {:leaf_set, combined})
@@ -33,7 +35,6 @@ defmodule LeafSets do
           send_aux(sorted, ind + 1, num, l)
         end
       end
-    
       def send(nodes, l, num, node_hexes) do
         #nodes is a list of pids
         #node_hexes is a list of nodeIds

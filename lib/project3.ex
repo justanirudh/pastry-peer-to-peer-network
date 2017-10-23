@@ -45,7 +45,7 @@ end
   def main(args) do
     #1k nodes ~ 15s, 10k nodes > 2hrs
     
-    num = Enum.at(args, 0) |> String.to_integer - 1 #number of peers
+    num = (Enum.at(args, 0) |> String.to_integer) - 1 #number of peers
     num_reqs = Enum.at(args, 1) |> String.to_integer #number of requests each peer needs to make
     l = 16 # 2^b in leafset, 8 nodeids less than and 8 nodeids greater than; in outing table, each row has max 15 cols
     m = 32
@@ -67,11 +67,13 @@ end
     IO.inspect "creating neighbourhoodsets..."
     NeighbourhoodSets.send(nodes, m, num, node_hexes)
 
-    #check if all state fine for a random node
-    IO.inspect GenServer.call(Enum.at(nodes, 50), :show)
-
     #add 1 node
-    NetworkJoin.add_node(nodes, num)
+    pid = NetworkJoin.add_node(nodes, num)
+
+    #check if all state fine for a random node
+    IO.inspect GenServer.call(pid, :show)
+
+    IO.puts "new node added"
 
     #activate nodes to start sending messages to each other
     activate_peers(nodes, 0, num, num_reqs)
