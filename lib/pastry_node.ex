@@ -186,7 +186,7 @@ defmodule PastryNode do
     #TODO: When changing routing algo, change both algos: for routing msgs and routing nodeids
     #nodeid routing algorithm
     def handle_cast({:add_node, new_nodeid, new_pid, num_hops}, map) do
-        IO.puts "Num_hops (add_node): #{Integer.to_string(num_hops)}"
+        # IO.puts "Num_hops (add_node): #{Integer.to_string(num_hops)}"
         curr_nodeid = Map.get(map, :nodeid)
         IO.puts "path: #{curr_nodeid}"
         curr_proxid = Map.get(map, :proxid)
@@ -266,7 +266,7 @@ defmodule PastryNode do
     def handle_cast({:msg, key, val, num_hops}, map) do
         curr_nodeid = Map.get(map, :nodeid)
         IO.puts "#{key} msg reached #{curr_nodeid}" 
-        IO.inspect Map.get(map, :routing_table)
+        # IO.inspect Map.get(map, :routing_table)
         key_int = elem(Integer.parse(key, 16), 0)
         leaf_set =  Map.get(map, :leaf_set)
         leaf_set_size = length(leaf_set)
