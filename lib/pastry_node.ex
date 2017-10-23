@@ -55,16 +55,24 @@ defmodule PastryNode do
     end
 
 
-    def handle_cast({:add_me, sender_nodeid, sender_pid}, map) do
+    def handle_cast({:add_me, sender_nodeid, sender_pid, proxid}, map) do
         #add in leafset
         leaf_set = Map.get(map, :leaf_set)
         sender_nodeid_int = Integer.parse(sender_nodeid, 16) |> elem(0)
         leaf_set = RoutingUtils.add_in_leaf_set(leaf_set, @l, sender_nodeid_int, sender_nodeid, sender_pid)
         map = Map.put(map, :leaf_set, leaf_set)
         #add in routing table
-
+        curr_nodeid = Map.get(map, :nodeid)
+        row_num = Utils.lcp([curr_nodeid, sender_nodeid]) |> String.length
+        first_diff = String.at(sender_nodeid, row_num)
+        routing_table = Map.get(map, :routing_table)
+        routing_row = Map.get(routing_table, row_num)
+        routing_row = Map.put(routing_row, first_diff, {sender_nodeid, sender_pid})
+        map = Map.put(map, row_num, routing_row)
         #add in neighset
-        
+        neigh_set = Map.get(map, :neigh_set)
+        neigh_set = RoutingUtils.add_in_leaf_set(neigh_set, @l, proxid, sender_nodeid, sender_pid)
+        map = Map.put(map, :neigh_set, neigh_set)
         {:noreply, map}
     end
 
@@ -74,7 +82,8 @@ defmodule PastryNode do
         if(Map.get(map, :leaf_set) != [] && Map.get(map, :neigh_set) != []) do
             all_nodes = RoutingUtils.get_union_all(map)
             hex = Map.get(map, :nodeid)
-            Enum.each(all_nodes, fn {_, pid} -> GenServer.cast pid, {:add_me, hex, curr_pid}  end)
+            proxid = Map.get(map, :proxid)
+            Enum.each(all_nodes, fn {_, pid} -> GenServer.cast pid, {:add_me, hex, curr_pid, proxid}  end)
         else
             IO.puts "Either leaf set or neighbourhood set are not populated. Waiting for them..."
             :timer.sleep(1000)
