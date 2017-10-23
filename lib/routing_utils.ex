@@ -5,7 +5,7 @@ defmodule RoutingUtils do
     
     def get_min_dist(leaf_set, key_int, ind, dist_pid, min_diff, leaf_set_size) do
         if ind == leaf_set_size do
-            dist_pid
+            {dist_pid, min_diff}
         else
             tup = Enum.at(leaf_set, ind)
             curr_int = elem(tup, 0)

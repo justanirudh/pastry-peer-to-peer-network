@@ -224,18 +224,22 @@ defmodule PastryNode do
                 #leafset
                 dist_pid = elem(Enum.at(leaf_set, 0), 2) 
                 min_diff = abs(leaf_set_min - new_nodeid_int)
-                dist_pid = RoutingUtils.get_min_dist(leaf_set, new_nodeid_int, 1, dist_pid, min_diff, leaf_set_size)
-                IO.puts "in leafset"
-                #send routing table to new node
-                routing_row = Map.get(routing_table, num_hops)
-                if routing_row == nil do
-                    routing_row = %{}
+                {dist_pid, min_diff} = RoutingUtils.get_min_dist(leaf_set, new_nodeid_int, 1, dist_pid, min_diff, leaf_set_size)
+                curr_diff = abs(new_nodeid_int - elem(Integer.parse(Map.get(map, :nodeid), 16), 0))
+                if curr_diff < min_diff do
+                    :current
+                else
+                    routing_row = Map.get(routing_table, num_hops)
+                    if routing_row == nil do
+                        routing_row = %{}
+                    end
+                    IO.inspect routing_row
+                    #send routing row
+                    GenServer.cast new_pid, {:routing_table, routing_row, com_prefix_len , curr_nodeid, curr_pid, :not_last}
+                    #forward the message
+                    GenServer.cast dist_pid, {:add_node, new_nodeid, new_pid, num_hops + 1}
+                    :sent
                 end
-                IO.inspect "routing row:"
-                IO.inspect routing_row
-                GenServer.cast new_pid, {:routing_table, routing_row, com_prefix_len , curr_nodeid, curr_pid, :not_last}
-                GenServer.cast dist_pid, {:stop_nodeid, new_nodeid, new_pid, num_hops + 1}
-                :sent
             else         
                 internal_map = Map.get(routing_table, com_prefix_len)
                 if(internal_map != nil) do
@@ -282,7 +286,7 @@ defmodule PastryNode do
     #msg routing algorithm
     def handle_cast({:msg, key, val, num_hops}, map) do
         curr_nodeid = Map.get(map, :nodeid)
-        IO.puts "#{key} msg reached #{curr_nodeid}" 
+        # IO.puts "#{key} msg reached #{curr_nodeid}" 
         # IO.inspect Map.get(map, :routing_table)
         key_int = elem(Integer.parse(key, 16), 0)
         leaf_set =  Map.get(map, :leaf_set)
@@ -290,17 +294,16 @@ defmodule PastryNode do
         leaf_set_min = elem(Enum.at(leaf_set, 0), 0)
         leaf_set_max = elem(Enum.at(leaf_set, leaf_set_size - 1), 0)
         status = if key_int >= leaf_set_min && key_int <= leaf_set_max do
-            #TODO: compare between ((msg - curr_node) and min(msg - leaf_set)). if former, GAMEOVER, else forward
-            #GAME OVER (for now. change in TODO)
-            # IO.puts "in leaf_set table of #{curr_nodeid}"
-            #setting first guy as solution
             dist_pid = elem(Enum.at(leaf_set, 0), 2) 
             min_diff = abs(leaf_set_min - key_int)
-            #finding actual guy
-            dist_pid = RoutingUtils.get_min_dist(leaf_set, key_int, 1, dist_pid, min_diff, leaf_set_size)
-            # GenServer.cast dist_pid, {:msg, key, val, num_hops + 1} #can lead to infinite loops
-            GenServer.cast dist_pid, {:stop, key, val, num_hops + 1}
-            :sent
+            {dist_pid, min_diff} = RoutingUtils.get_min_dist(leaf_set, key_int, 1, dist_pid, min_diff, leaf_set_size)
+            curr_diff = abs(key_int - elem(Integer.parse(Map.get(map, :nodeid), 16), 0))
+            if curr_diff < min_diff do
+                :current
+            else
+                GenServer.cast dist_pid, {:msg, key, val, num_hops + 1}
+                :sent
+            end
         else
             com_prefix_len = Utils.lcp([key, curr_nodeid]) |> String.length
             routing_table =  Map.get(map, :routing_table)

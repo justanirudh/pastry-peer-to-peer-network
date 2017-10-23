@@ -69,50 +69,6 @@ end
     avg_num_hops = get_avg_num_hops(num_reqs * num, 0, 0)
 
     IO.puts "Average number of hops is #{avg_num_hops}"
-    
-
-    # bootstrap = 100
-    # num = (Enum.at(args, 0) |> String.to_integer) - bootstrap #number of peers
-    # num_reqs = Enum.at(args, 1) |> String.to_integer #number of requests each peer needs to make
-    # l = 16 # 2^b in leafset, 8 nodeids less than and 8 nodeids greater than; in outing table, each row has max 15 cols
-    # m = 32
-
-    # self() |> Process.register(:master) #register master
-    
-    # #list of all pids
-    # nodes = spawn_pastry(num)
-
-    # #Pastry setup
-    # #TODO: need to change this after implementing the 'join' functionality?
-    # node_hexes = 1..num |> Enum.map(fn i -> (:crypto.hash(:md5, Integer.to_string(i)) |> Base.encode16()) end)
-    # IO.inspect "creating leafsets..."
-    # LeafSets.send(nodes, l, num, node_hexes)
-    # IO.inspect "creating routing tables..."
-    # RoutingTables.send(nodes, node_hexes, num ,l)
-    # #Neighbourhood set: M = 32. similar to leafset but with 32 neighbours and with num indices.
-    # IO.inspect "creating neighbourhoodsets..."
-    # NeighbourhoodSets.send(nodes, m, num, node_hexes)
-
-    # #add many nodes
-    # # pid = NetworkJoin.add_node(nodes, num)
-
-    # nodes = NetworkJoin.add_node_many(nodes, num, bootstrap)
-    # num = length nodes
-
-    # #check if all state fine for a random node
-    # # IO.inspect GenServer.call(pid, :show)
-
-    # IO.puts "new node(s) added"
-
-    # #activate nodes to start sending messages to each other
-    # activate_peers(nodes, 0, num, num_reqs)
-
-    # IO.puts "peers activated.\nCounting avg number of hops "
-
-    # avg_num_hops = get_avg_num_hops(num_reqs * num, 0, 0)
-
-    # IO.puts "Average number of hops is #{avg_num_hops}"
-    
 
   end
 
