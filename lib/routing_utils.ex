@@ -25,7 +25,7 @@ defmodule RoutingUtils do
         
         routing_table =  Map.get(map, :routing_table)
         rt_vals = Map.values routing_table
-        routing_table_res = Enum.map(rt_vals, fn map -> Map.values map end) |> List.flatten #2
+        routing_table_res = Enum.map(rt_vals, fn m -> Map.values m end) |> List.flatten #2
         
         neighset = Map.get(map, :neigh_set)
         neighset_res =  Enum.map(neighset, fn {_, h, p} -> {h,p} end) #3
@@ -78,7 +78,7 @@ defmodule RoutingUtils do
                 end
                 IO.inspect "routing row:"
                 IO.inspect routing_row
-                GenServer.cast new_pid, {:routing_table, routing_row, num_hops, curr_nodeid, curr_pid, :not_last}
+                GenServer.cast new_pid, {:routing_table, routing_row, com_prefix_len , curr_nodeid, curr_pid, :not_last}
                 #forward to next pid
                 GenServer.cast pid, {:add_node, new_nodeid, new_pid, num_hops + 1}
                 :sent
@@ -140,6 +140,21 @@ defmodule RoutingUtils do
             end
         end
         leaf_set
+    end
+
+    def verify_row(routing_row, row_num, curr_hex) do
+        keys = Map.keys(routing_row)
+        if length(keys) == 0 do
+            routing_row
+        else
+            {first_hex, _} =  Map.get(routing_row, Enum.at(keys, 0))
+            com_prefix_len = Utils.lcp([first_hex, curr_hex]) |> String.length
+            if com_prefix_len != row_num do
+                %{}
+            else
+                routing_row
+            end
+        end      
     end
 
 end

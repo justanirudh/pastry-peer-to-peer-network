@@ -137,13 +137,16 @@ defmodule PastryNode do
     #received routing table:from nodes in path to new node
     def handle_cast({:routing_table, routing_row, row_num, sender_nodeid, sender_pid, is_last}, map) do
         #1. add sender's info to routing table, will go in the row that just got added
-        com_prefix_len = Utils.lcp([Map.get(map, :nodeid), sender_nodeid]) |> String.length
+        curr_hex = Map.get(map, :nodeid)
+        com_prefix_len = Utils.lcp([curr_hex, sender_nodeid]) |> String.length
         first_diff = String.at(sender_nodeid, com_prefix_len)
         if routing_row == nil do
             routing_row = %{}
         end
         routing_row = Map.put(routing_row, first_diff, {sender_nodeid, sender_pid})
         #2. add row to routing table
+        #TODO: this check should not be required
+        routing_row = RoutingUtils.verify_row(routing_row, row_num, curr_hex)
         routing_table = Map.get(map, :routing_table)
         routing_table = Map.put(routing_table, row_num, routing_row)
         map = Map.put(map, :routing_table, routing_table)
@@ -167,7 +170,8 @@ defmodule PastryNode do
         IO.inspect leaf_set
         GenServer.cast new_pid, {:leaf_set, leaf_set, {nodeid_int, curr_nodeid, curr_pid}}
         #send routing table
-        routing_row = Map.get(map, :routing_table) |> Map.get(num_hops)
+        com_prefix_len = Utils.lcp([new_nodeid, curr_nodeid]) |> String.length
+        routing_row = Map.get(map, :routing_table) |> Map.get(com_prefix_len)
         if routing_row == nil do
             routing_row = %{}
         end
@@ -198,6 +202,7 @@ defmodule PastryNode do
         leaf_set_size = length(leaf_set)
         leaf_set_min = elem(Enum.at(leaf_set, 0), 0)
         leaf_set_max = elem(Enum.at(leaf_set, leaf_set_size - 1), 0)
+        com_prefix_len = Utils.lcp([new_nodeid, curr_nodeid]) |> String.length
         status = if new_nodeid_int >= leaf_set_min && new_nodeid_int <= leaf_set_max do
             #leafset
             dist_pid = elem(Enum.at(leaf_set, 0), 2) 
@@ -211,11 +216,11 @@ defmodule PastryNode do
             end
             IO.inspect "routing row:"
             IO.inspect routing_row
-            GenServer.cast new_pid, {:routing_table, routing_row, num_hops, curr_nodeid, curr_pid, :not_last}
+            GenServer.cast new_pid, {:routing_table, routing_row, com_prefix_len , curr_nodeid, curr_pid, :not_last}
             GenServer.cast dist_pid, {:stop_nodeid, new_nodeid, new_pid, num_hops + 1}
             :sent
         else
-            com_prefix_len = Utils.lcp([new_nodeid, curr_nodeid]) |> String.length
+            
             internal_map = Map.get(routing_table, com_prefix_len)
             if(internal_map != nil) do
                 first_diff = String.at(new_nodeid, com_prefix_len)
@@ -229,7 +234,7 @@ defmodule PastryNode do
                     end
                     IO.inspect "routing row:"
                     IO.inspect routing_row
-                    GenServer.cast new_pid, {:routing_table, routing_row, num_hops, curr_nodeid, curr_pid, :not_last}
+                    GenServer.cast new_pid, {:routing_table, routing_row, com_prefix_len, curr_nodeid, curr_pid, :not_last}
                     #forward the nodeid to next node
                     GenServer.cast dist_pid, {:add_node, new_nodeid, new_pid, num_hops + 1}
                 else
@@ -260,7 +265,8 @@ defmodule PastryNode do
     #msg routing algorithm
     def handle_cast({:msg, key, val, num_hops}, map) do
         curr_nodeid = Map.get(map, :nodeid)
-        # IO.puts "msg reached #{curr_nodeid}" 
+        IO.puts "#{key} msg reached #{curr_nodeid}" 
+        IO.inspect Map.get(map, :routing_table)
         key_int = elem(Integer.parse(key, 16), 0)
         leaf_set =  Map.get(map, :leaf_set)
         leaf_set_size = length(leaf_set)
