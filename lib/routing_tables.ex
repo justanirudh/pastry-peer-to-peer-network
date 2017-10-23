@@ -95,7 +95,7 @@ defmodule RoutingTables do
       map = get_left_values(map, ind - 1, sorted, curr_hex, l, num)
       
       curr_pid = elem(Enum.at(sorted, ind), 1)
-      :ok = GenServer.call(curr_pid, {:routing_table, map})
+      :ok = GenServer.call(curr_pid, {:routing_table, map}, :infinity)
 
       send_aux(sorted, ind + 1, num, l)
     end

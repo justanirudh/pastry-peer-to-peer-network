@@ -30,7 +30,7 @@ defmodule LeafSets do
           combined = List.delete combined, Enum.at(sorted, ind) #Just to be sure
           
           curr = elem(Enum.at(sorted, ind), 2)
-          :ok = GenServer.call(curr, {:leaf_set, combined})
+          :ok = GenServer.call(curr, {:leaf_set, combined}, :infinity)
     
           send_aux(sorted, ind + 1, num, l)
         end
