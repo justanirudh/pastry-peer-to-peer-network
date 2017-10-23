@@ -18,7 +18,7 @@ defmodule Pastry do
   defp spawn_pastry(num) do
     1..num |> Enum.map(fn i ->
       hex = :crypto.hash(:md5, Integer.to_string(i)) |> Base.encode16()
-      elem(GenServer.start_link(PastryNode, %{:nodeid => hex, :proxid => i, :leaf_set => nil, :routing_table => nil, :neigh_set => nil}), 1) end) 
+      elem(GenServer.start_link(PastryNode, %{:nodeid => hex, :proxid => i, :leaf_set => [], :routing_table => %{}, :neigh_set => []}), 1) end) 
   end
 
 defp activate_peers(nodes, ind, len, num_reqs) do

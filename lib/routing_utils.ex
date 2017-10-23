@@ -3,25 +3,25 @@ defmodule RoutingUtils do
     #TODO: change it back to 1000000
     @sleep_time 1 # in microseconds
     
-    def get_min_dist(leafset, key_int, ind, dist_pid, min_diff, leafset_size) do
-        if ind == leafset_size do
+    def get_min_dist(leaf_set, key_int, ind, dist_pid, min_diff, leaf_set_size) do
+        if ind == leaf_set_size do
             dist_pid
         else
-            tup = Enum.at(leafset, ind)
+            tup = Enum.at(leaf_set, ind)
             curr_int = elem(tup, 0)
             diff = abs(curr_int - key_int)
             if diff < min_diff do
-                get_min_dist(leafset, key_int, ind + 1,  elem(tup, 2), diff, leafset_size)
+                get_min_dist(leaf_set, key_int, ind + 1,  elem(tup, 2), diff, leaf_set_size)
             else
-                get_min_dist(leafset, key_int, ind + 1,  dist_pid, min_diff, leafset_size)
+                get_min_dist(leaf_set, key_int, ind + 1,  dist_pid, min_diff, leaf_set_size)
             end
         end
     end
 
     #returns list of {hex, pid}
     defp get_union_all(map) do
-        leafset =  Map.get(map, :leaf_set)
-        leafset_res = Enum.map(leafset, fn {_, h, p} -> {h,p} end) #1
+        leaf_set =  Map.get(map, :leaf_set)
+        leaf_set_res = Enum.map(leaf_set, fn {_, h, p} -> {h,p} end) #1
         
         routing_table =  Map.get(map, :routing_table)
         rt_vals = Map.values routing_table
@@ -30,7 +30,7 @@ defmodule RoutingUtils do
         neighset = Map.get(map, :neigh_set)
         neighset_res =  Enum.map(neighset, fn {_, h, p} -> {h,p} end) #3
 
-        (leafset_res ++ routing_table_res ++ neighset_res) |> Enum.uniq
+        (leaf_set_res ++ routing_table_res ++ neighset_res) |> Enum.uniq
 
     end
 
@@ -93,6 +93,30 @@ defmodule RoutingUtils do
             :timer.sleep(@sleep_time)
             send_messages(nodes, num_reqs, ind + 1)
         end
+    end
+
+        
+    defp insert_sortedly_aux(leaf_set, sender_nodeid_int, ind, len) do
+        if ind == len do
+            -1
+        else
+            {hex_int, _, _} = Enum.at(leaf_set, ind)
+            if hex_int > sender_nodeid_int do
+                ind
+            else
+                insert_sortedly_aux(leaf_set, sender_nodeid_int, ind + 1, len)
+            end
+        end
+    end
+
+    def insert_sortedly(leaf_set, {sender_nodeid_int, sender_nodeid, sender_pid}, leaf_set_len) do
+        if length(leaf_set) == 0 do
+            [{sender_nodeid_int, sender_nodeid, sender_pid}]
+        else
+            index = insert_sortedly_aux(leaf_set, sender_nodeid_int, 0, leaf_set_len)
+            List.insert_at(leaf_set, index, {sender_nodeid_int, sender_nodeid, sender_pid})
+        end
+        
     end
 
 end
