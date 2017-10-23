@@ -53,11 +53,31 @@ defmodule PastryNode do
         {:noreply, map}
     end
 
-
+    #received neighbourhood set
     def handle_cast({:neigh_set, neigh_set, {sender_proxid, sender_nodeid, sender_pid}}, map) do
-        
+        #Does not matter. at worst, the set will have random elements
+        neigh_set_len = length(neigh_set)
+        if(neigh_set_len < @m) do
+            #insert {sender_proxid, sender_nodeid, sender_pid} in neigh_set sortedly
+            neigh_set = RoutingUtils.insert_sortedly(neigh_set, {sender_proxid, sender_nodeid, sender_pid}, neigh_set_len)
+            {:noreply, Map.put(map, :neigh_set, neigh_set)}   
+        else
+            neigh_set_min = elem(Enum.at(neigh_set, 0), 0)
+            neigh_set_max = elem(Enum.at(neigh_set, neigh_set_len - 1), 0)
+            if sender_proxid > neigh_set_min && sender_proxid < neigh_set_max do
+                #insert and delete from edge
+                neigh_set = RoutingUtils.insert_sortedly(neigh_set, {sender_proxid, sender_nodeid, sender_pid}, neigh_set_len)
+                neigh_set = List.delete_at(neigh_set, neigh_set_len)
+                {:noreply, Map.put(map, :neigh_set, neigh_set)}
+            else
+                #dont add
+                {:noreply, map}
+            end
+            
+        end
     end
 
+    #received leaf set
     def handle_cast({:leaf_set, leaf_set, {sender_nodeid_int, sender_nodeid, sender_pid}}, map) do
         #receiver's leaf_set is empty
         leaf_set_len = length(leaf_set)
@@ -79,7 +99,6 @@ defmodule PastryNode do
             end
             
         end
-        
     end
 
     def handle_cast({:routing_table, routing_row, row_num, sender_nodeid, sender_pid}, map) do
