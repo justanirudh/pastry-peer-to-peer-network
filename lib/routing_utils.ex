@@ -73,7 +73,7 @@ defmodule RoutingUtils do
             {:success, pid} -> 
                 #send routing table to new node
                 routing_row = Map.get(map, :routing_table) |> Map.get(num_hops)
-                GenServer.cast new_pid, {:routing_table, routing_row, num_hops, curr_nodeid, curr_pid}
+                GenServer.cast new_pid, {:routing_table, routing_row, num_hops, curr_nodeid, curr_pid, :not_last}
                 #forward to next pid
                 GenServer.cast pid, {:stop_nodeid, new_nodeid, new_pid, num_hops + 1}
                 :sent

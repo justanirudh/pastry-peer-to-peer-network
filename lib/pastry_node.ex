@@ -45,6 +45,7 @@ defmodule PastryNode do
     #Add node functions cast
     #----------------------------------------------------------------------------
     
+    #start the process of joining to pastry network
     def handle_cast({:join, nodes}, map) do
         rec_pid = Enum.random nodes
         curr = self()
@@ -101,8 +102,31 @@ defmodule PastryNode do
         end
     end
 
-    def handle_cast({:routing_table, routing_row, row_num, sender_nodeid, sender_pid}, map) do
-        
+    def handle_cast(:propagate, map) do
+        if(Map.get(map, :leaf_set) != [] && Map.get(map, :neigh_set) != []) do
+            
+        else
+            IO.puts "Either leaf set or neighbourhood set are not populated. Waiting for them..."
+            :timer.sleep(1000)
+            curr_pid = self()
+            GenServer.cast curr_pid, :propagate
+        end
+    end
+
+    def handle_cast({:routing_table, routing_row, row_num, sender_nodeid, sender_pid, is_last}, map) do
+        #1. add sender's info to routing table, will go in the row that just got added
+        com_prefix_len = Utils.lcp([Map.get(map, :nodeid), sender_nodeid]) |> String.length
+        first_diff = String.at(sender_nodeid, com_prefix_len)
+        routing_row = Map.put(routing_row, first_diff, {sender_nodeid, sender_pid})
+        #2. add row to routing table
+        routing_table = Map.get(map, :routing_table)
+        routing_table = Map.put(routing_table, row_num, routing_row)
+        map = Map.put(map, :routing_table, routing_table)
+        curr_pid = self()
+        if is_last == :last do
+            GenServer.cast curr_pid, :propagate
+        end
+        {:noreply, map}
     end
 
     #stop and send leaf_set and routing table
@@ -115,7 +139,7 @@ defmodule PastryNode do
         GenServer.cast new_pid, {:leaf_set, leaf_set, {nodeid_int, curr_nodeid, curr_pid}}
         #send routing table
         routing_row = Map.get(map, :routing_table) |> Map.get(num_hops)
-        GenServer.cast  new_pid,  {:routing_table, routing_row, num_hops, curr_nodeid, curr_pid}
+        GenServer.cast  new_pid,  {:routing_table, routing_row, num_hops, curr_nodeid, curr_pid, :last}
         {:noreply, map}
     end
 
@@ -152,7 +176,7 @@ defmodule PastryNode do
                     dist_pid = elem(internal_tup, 1)
                     #send routing table to new node
                     routing_row = Map.get(routing_table, num_hops)
-                    GenServer.cast new_pid, {:routing_table, routing_row, num_hops, curr_nodeid, curr_pid}
+                    GenServer.cast new_pid, {:routing_table, routing_row, num_hops, curr_nodeid, curr_pid, :not_last}
                     #forward the nodeid to next node
                     GenServer.cast dist_pid, {:add_node, new_nodeid, new_pid, num_hops + 1}
                 else
