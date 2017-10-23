@@ -67,6 +67,16 @@ defmodule RoutingUtils do
         end
     end
 
+    def is_nodeid_send(map, new_nodeid, new_nodeid_int, com_prefix_len, num_hops, new_pid) do
+        res = search_entire_state(map, new_nodeid, new_nodeid_int, com_prefix_len)
+        case res do
+            {:success, pid} -> 
+                GenServer.cast pid, {:stop_nodeid, new_nodeid, new_pid, num_hops + 1}
+                :sent
+            :failure -> :current
+        end
+    end
+
 
     def send_messages(nodes, num_reqs, ind) do
         if(ind == num_reqs) do
