@@ -6,14 +6,15 @@ defmodule PastryNode do
     #state manual_pastry: nodeid, leafset, routing_table, neighbourhoodset
     #map bootstrap pastry: %{:nodeid => hex, :proxid => num,  :leaf_set => nil, :routing_table => nil, :neigh_set => nil}
     
-    #Leafset needs to remain sorted, neighbourhood set might noe remain sorted
+    #Leafset needs to remain sorted, neighbourhood set might not remain sorted
 
     #AddNode functions call
     #------------------------------------------------------------
 
 
     #------------------------------------------------------------
-    
+    #All these will go
+
     #add leaf set
     def handle_call({:leaf_set, leaf_set}, _from, map) do
         {:reply, :ok,  Map.put(map, :leaf_set, leaf_set)} 
@@ -61,17 +62,21 @@ defmodule PastryNode do
         
     end
 
-    def handle_cast({:routing_table, routing_row, row_num}, map) do
+    def handle_cast({:routing_table, routing_row, row_num, sender_nodeid, sender_pid}, map) do
         
     end
 
+    #stop and send leafset and routing table
     def handle_cast({:stop_nodeid, new_nodeid, new_pid, num_hops}, map) do
         curr_pid = self()
         curr_nodeid = Map.get(map, :nodeid)
         nodeid_int = Integer.parse(curr_nodeid, 16) |> elem(0)
         leaf_set = Map.get(map, :leaf_set)
-        send new_pid, {:leaf_set, leaf_set, {nodeid_int, curr_nodeid, curr_pid}}
-        #num_hops will be required to find out which row of routing table to send
+        #send leafset
+        GenServer.cast new_pid, {:leaf_set, leaf_set, {nodeid_int, curr_nodeid, curr_pid}}
+        #send routing table
+        routing_row = Map.get(map, :routing_table) |> Map.get(num_hops)
+        GenServer.cast  new_pid,  {:routing_table, routing_row, num_hops, curr_nodeid, curr_pid}
         {:noreply, map}
     end
 
@@ -106,17 +111,21 @@ defmodule PastryNode do
                 internal_tup = Map.get(internal_map, first_diff)
                 if internal_tup != nil do
                     dist_pid = elem(internal_tup, 1)
+                    #send routing table to new node
+                    routing_row = Map.get(routing_table, num_hops)
+                    GenServer.cast new_pid, {:routing_table, routing_row, num_hops, curr_nodeid, curr_pid}
+                    #forward the nodeid to next node
                     GenServer.cast dist_pid, {:add_node, new_nodeid, new_pid, num_hops + 1}
                 else
-                    RoutingUtils.is_nodeid_send(map, new_nodeid, new_nodeid_int, com_prefix_len,num_hops, new_pid)
+                    RoutingUtils.is_nodeid_send(map, new_nodeid, new_nodeid_int, com_prefix_len,num_hops, new_pid, curr_nodeid, curr_pid )
                 end
             else
-                RoutingUtils.is_nodeid_send(map, new_nodeid, new_nodeid_int, com_prefix_len,num_hops, new_pid)
+                RoutingUtils.is_nodeid_send(map, new_nodeid, new_nodeid_int, com_prefix_len,num_hops, new_pid, curr_nodeid, curr_pid )
             end
         end
 
         if status == :current do
-            #sending to self to send leafset to new node
+            #sending to self to send leafset and routing table to new node
             GenServer.cast curr_pid, {:stop_nodeid, new_nodeid, new_pid, num_hops}
         end
         {:noreply, map}

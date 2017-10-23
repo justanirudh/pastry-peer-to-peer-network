@@ -67,10 +67,14 @@ defmodule RoutingUtils do
         end
     end
 
-    def is_nodeid_send(map, new_nodeid, new_nodeid_int, com_prefix_len, num_hops, new_pid) do
+    def is_nodeid_send(map, new_nodeid, new_nodeid_int, com_prefix_len, num_hops, new_pid, curr_nodeid, curr_pid) do
         res = search_entire_state(map, new_nodeid, new_nodeid_int, com_prefix_len)
         case res do
             {:success, pid} -> 
+                #send routing table to new node
+                routing_row = Map.get(map, :routing_table) |> Map.get(num_hops)
+                GenServer.cast new_pid, {:routing_table, routing_row, num_hops, curr_nodeid, curr_pid}
+                #forward to next pid
                 GenServer.cast pid, {:stop_nodeid, new_nodeid, new_pid, num_hops + 1}
                 :sent
             :failure -> :current
