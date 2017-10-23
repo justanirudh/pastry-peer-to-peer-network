@@ -26,7 +26,7 @@ defmodule NeighbourhoodSets do
           combined = list_left ++ list_right
           
           curr = elem(Enum.at(sorted, ind), 2)
-          :ok = GenServer.call(curr, {:neighset, combined})
+          :ok = GenServer.call(curr, {:neigh_set, combined})
     
           send_aux(sorted, ind + 1, num, m)
         end

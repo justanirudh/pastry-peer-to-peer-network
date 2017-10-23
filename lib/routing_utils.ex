@@ -19,16 +19,16 @@ defmodule RoutingUtils do
     end
 
     #returns list of {hex, pid}
-    defp get_union_all(state) do
-        leafset = elem(state, 1)
+    defp get_union_all(map) do
+        leafset =  Map.get(map, :leaf_set)
         leafset_res = Enum.map(leafset, fn {_, h, p} -> {h,p} end) #1
         
-        routing_table = elem(state, 2)
+        routing_table =  Map.get(map, :routing_table)
         rt_vals = Map.values routing_table
         routing_table_res = Enum.map(rt_vals, fn map -> Map.values map end) |> List.flatten #2
         
-        neighset = elem(state, 3)
-        neighset_res =  Enum.map(neighset, fn {_, h, p} -> {h,p} end) #1
+        neighset = Map.get(map, :neigh_set)
+        neighset_res =  Enum.map(neighset, fn {_, h, p} -> {h,p} end) #3
 
         (leafset_res ++ routing_table_res ++ neighset_res) |> Enum.uniq
 
@@ -49,16 +49,16 @@ defmodule RoutingUtils do
         end
     end
 
-    defp search_entire_state(state, key, key_int, min_com_prefix_len) do
-        curr_hex = elem(state, 0)
+    defp search_entire_state(map, key, key_int, min_com_prefix_len) do
+        curr_hex = Map.get(map, :nodeid)
         min_num_diff = abs(key_int - elem(Integer.parse( curr_hex, 16), 0))
-        union_all = get_union_all(state)
+        union_all = get_union_all(map)
         #find the first guy who's (com_prefix_len >= min_com_prefix_len) && (num_diff < min_num_diff)
         find_next_node(union_all, length(union_all), min_com_prefix_len, min_num_diff, key, key_int, 0)
     end
 
-    def is_send(state, key, key_int, com_prefix_len, val, num_hops) do
-        res = search_entire_state(state, key, key_int, com_prefix_len)
+    def is_send(map, key, key_int, com_prefix_len, val, num_hops) do
+        res = search_entire_state(map, key, key_int, com_prefix_len)
         case res do
             {:success, pid} -> 
                 GenServer.cast pid, {:msg, key, val, num_hops + 1} 

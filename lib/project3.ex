@@ -16,7 +16,9 @@ defmodule Pastry do
   # [{num1, hex1, <pid1>},{num2,hex2,<pid2>, ....} ]
 
   defp spawn_pastry(num) do
-    1..num |> Enum.map(fn i -> elem(GenServer.start_link(PastryNode, :crypto.hash(:md5, Integer.to_string(i)) |> Base.encode16()), 1) end) 
+    1..num |> Enum.map(fn i ->
+      hex = :crypto.hash(:md5, Integer.to_string(i)) |> Base.encode16()
+      elem(GenServer.start_link(PastryNode, %{:nodeid => hex, :leaf_set => nil, :routing_table => nil, :neigh_set => nil}), 1) end) 
   end
 
 defp activate_peers(nodes, ind, len, num_reqs) do
@@ -67,6 +69,9 @@ end
 
     #check if all state fine for a random node
     IO.inspect GenServer.call(Enum.at(nodes, 50), :show)
+
+    #add 1 node
+    # NetworkJoin.add_node(nodes, node_hexes, num)
 
     #activate nodes to start sending messages to each other
     activate_peers(nodes, 0, num, num_reqs)

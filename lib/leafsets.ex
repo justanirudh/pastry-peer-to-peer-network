@@ -28,7 +28,7 @@ defmodule LeafSets do
           combined = list_left ++ list_right
           
           curr = elem(Enum.at(sorted, ind), 2)
-          :ok = GenServer.call(curr, {:leafset, combined})
+          :ok = GenServer.call(curr, {:leaf_set, combined})
     
           send_aux(sorted, ind + 1, num, l)
         end
