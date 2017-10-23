@@ -76,8 +76,6 @@ defmodule RoutingUtils do
                 if routing_row == nil do
                     routing_row = %{}
                 end
-                IO.inspect "routing row:"
-                IO.inspect routing_row
                 GenServer.cast new_pid, {:routing_table, routing_row, com_prefix_len , curr_nodeid, curr_pid, :not_last}
                 #forward to next pid
                 GenServer.cast pid, {:add_node, new_nodeid, new_pid, num_hops + 1}

@@ -1,21 +1,12 @@
 # Pastry
 
 Team members: Anirudh Pathak, Vaibhav Yenamandra
-What is working: routing and network join
-What is the largest network you managed to deal with: 3000 nodes
+What is working: network join and routing
+What is the largest network you managed to deal with: 10000 nodes
 
-Other stats:
-b = 4
-L = 16
-M = 32
-num_nodes num_requests avg_hops
-100          10          ~1.9
-1000         10          ~2.9
-1000         1000        ~2.9
-2000         100         ~3.04
-3000         10          ~3.26 
+Note: The messages are NOT being sent per second. we found it too slow to test.
 
-Data structures:
+Data structures used:
 
   LEAFSET
   [{hex_int1, hex1, <pid1>},{hex_int2,hex2,<pid2>, ....} ]

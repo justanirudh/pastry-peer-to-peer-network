@@ -25,7 +25,6 @@ defp activate_peers(nodes, ind, len, num_reqs) do
   if ind == len do
     :ok
   else
-    IO.puts "activated"
     :ok = GenServer.call Enum.at(nodes, ind), {:activate, nodes, num_reqs}, :infinity
     activate_peers(nodes, ind + 1, len, num_reqs)
   end
@@ -39,7 +38,7 @@ defp get_avg_num_hops(total_reqs, ind, sum) do
     num_hops = receive do
       {:num_hops, num_hops} -> num_hops 
     end
-    IO.inspect "#{ind}: #{num_hops}"
+    IO.inspect "Msg num. #{ind}: num_hops = #{num_hops}"
     get_avg_num_hops(total_reqs, ind + 1, sum + num_hops)
   end
 end
@@ -55,9 +54,6 @@ end
     
     #add rest nodes
     nodes = NetworkJoin.add_node_many([pid], 1, num - 1)
-
-    #check if all state fine for a random node
-    # IO.inspect GenServer.call(pid, :show)
 
     IO.puts "new node(s) added"
 

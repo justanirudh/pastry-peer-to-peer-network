@@ -3,38 +3,8 @@ defmodule PastryNode do
     @b 4
     @l 16
     @m 3
-    @max 3.402823669209385e38
-    #state manual_pastry: nodeid, leaf_set, routing_table, neighbourhoodset
-    #map bootstrap pastry: %{:nodeid => hex, :proxid => num,  :leaf_set => nil, :routing_table => nil, :neigh_set => nil}
-    
-    #leaf_set needs to remain sorted, neighbourhood set might not remain sorted
-
-    #AddNode functions call
-    #------------------------------------------------------------
-
-
-    #------------------------------------------------------------
-    #All these will go
-
-    #add leaf set
-    def handle_call({:leaf_set, leaf_set}, _from, map) do
-        {:reply, :ok,  Map.put(map, :leaf_set, leaf_set)} 
-    end
-
-    #add routing table
-    def handle_call({:routing_table, routing_table}, _from, map) do
-        {:reply, :ok,  Map.put(map, :routing_table, routing_table)} 
-    end
-
-    #add neighset set
-    def handle_call({:neigh_set, neigh_set}, _from, map) do
-        {:reply, :ok, Map.put(map, :neigh_set, neigh_set) } 
-    end
-
-    #show
-    def handle_call(:show, _from, st) do
-        {:reply, st, st} 
-    end
+    #map bootstrap pastry: %{:nodeid => hex, :proxid => num,  :leaf_set => nil, :routing_table => nil, 
+    #:neigh_set => nil}
 
     #activate to send messages to other peers
     def handle_call({:activate, nodes, num_reqs}, _from, st) do
@@ -42,8 +12,7 @@ defmodule PastryNode do
         {:reply, :ok, st} 
     end
 
-
-    #Add node functions cast
+    #Add node functions
     #----------------------------------------------------------------------------
     
     #start the process of joining to pastry network
@@ -83,15 +52,6 @@ defmodule PastryNode do
         end
         
         {:noreply, map}
-    end
-
-    def handle_info(:added, map) do
-        num_added = Map.get(map, :all_nodes_added)
-        num_added = num_added - 1
-        if num_added == 0 do
-            send :master, :node_added
-        end
-        {:noreply, Map.put(map, :all_nodes_added, num_added)}
     end
 
     #propagate yourself to all nodes in state
@@ -169,14 +129,11 @@ defmodule PastryNode do
     #ROUTING
     #stop and send leaf_set and routing table
     def handle_cast({:stop_nodeid, new_nodeid, new_pid, num_hops}, map) do
-        IO.puts "Num_hops (stop node): #{Integer.to_string(num_hops)}"
         curr_pid = self()
         curr_nodeid = Map.get(map, :nodeid)
         nodeid_int = Integer.parse(curr_nodeid, 16) |> elem(0)
         leaf_set = Map.get(map, :leaf_set)
         #send leaf_set
-        IO.puts "leafset of #{curr_nodeid}"
-        IO.inspect leaf_set
         GenServer.cast new_pid, {:leaf_set, leaf_set, {nodeid_int, curr_nodeid, curr_pid}}
         #send routing table
         com_prefix_len = Utils.lcp([new_nodeid, curr_nodeid]) |> String.length
@@ -184,20 +141,14 @@ defmodule PastryNode do
         if routing_row == nil do
             routing_row = %{}
         end
-        IO.inspect "routing table of #{curr_nodeid}"
-        IO.inspect Map.get(map, :routing_table)
-        IO.inspect "routing row:"
-        IO.inspect routing_row
         GenServer.cast  new_pid,  {:routing_table, routing_row, num_hops, curr_nodeid, curr_pid, :last}
         {:noreply, map}
     end
 
-    #TODO: When changing routing algo, change both algos: for routing msgs and routing nodeids
     #nodeid routing algorithm
     def handle_cast({:add_node, new_nodeid, new_pid, num_hops}, map) do
-        # IO.puts "Num_hops (add_node): #{Integer.to_string(num_hops)}"
         curr_nodeid = Map.get(map, :nodeid)
-        IO.puts "path: #{curr_nodeid}"
+
         curr_proxid = Map.get(map, :proxid)
         routing_table =  Map.get(map, :routing_table)
         curr_pid = self()
@@ -208,9 +159,6 @@ defmodule PastryNode do
         end
         new_nodeid_int = elem(Integer.parse(new_nodeid, 16), 0)
         leaf_set =  Map.get(map, :leaf_set)
-        if leaf_set == nil do
-            IO.puts "leafset is nil"
-        end
         leaf_set_size = length(leaf_set)
         if leaf_set_size < @l do
             # If leafset not completely full ,current node is terminal node
@@ -233,7 +181,6 @@ defmodule PastryNode do
                     if routing_row == nil do
                         routing_row = %{}
                     end
-                    IO.inspect routing_row
                     #send routing row
                     GenServer.cast new_pid, {:routing_table, routing_row, com_prefix_len , curr_nodeid, curr_pid, :not_last}
                     #forward the message
@@ -252,8 +199,6 @@ defmodule PastryNode do
                         if routing_row == nil do
                             routing_row = %{}
                         end
-                        IO.inspect "routing row:"
-                        IO.inspect routing_row
                         GenServer.cast new_pid, {:routing_table, routing_row, com_prefix_len, curr_nodeid, curr_pid, :not_last}
                         #forward the nodeid to next node
                         GenServer.cast dist_pid, {:add_node, new_nodeid, new_pid, num_hops + 1}
@@ -276,18 +221,9 @@ defmodule PastryNode do
 
     #----------------------------------------------------------------------------
 
-    def handle_cast({:stop, key, val, num_hops}, map) do
-        #TODO: save key, val in current node, if needed
-        # IO.puts "terminal nodeid is #{elem(map, 0)}"
-        send :master, {:num_hops, num_hops}
-        {:noreply, map}
-    end
-
     #msg routing algorithm
     def handle_cast({:msg, key, val, num_hops}, map) do
         curr_nodeid = Map.get(map, :nodeid)
-        # IO.puts "#{key} msg reached #{curr_nodeid}" 
-        # IO.inspect Map.get(map, :routing_table)
         key_int = elem(Integer.parse(key, 16), 0)
         leaf_set =  Map.get(map, :leaf_set)
         leaf_set_size = length(leaf_set)
@@ -312,7 +248,6 @@ defmodule PastryNode do
                 first_diff = String.at(key, com_prefix_len)
                 internal_tup = Map.get(internal_map, first_diff)
                 if internal_tup != nil do
-                    # IO.puts "in routing table of #{curr_nodeid}"
                     dist_pid = elem(internal_tup, 1)
                     GenServer.cast dist_pid, {:msg, key, val, num_hops + 1}
                 else
@@ -324,11 +259,18 @@ defmodule PastryNode do
         end
 
         if status == :current do
-            #TODO: save key, val in current node
-            # IO.puts "terminal nodeid is #{elem(map, 0)}"
-            send :master, {:num_hops, num_hops}
+            send :master, {:num_hops, num_hops + 1}
         end
         {:noreply, map}
+    end
+
+    def handle_info(:added, map) do
+        num_added = Map.get(map, :all_nodes_added)
+        num_added = num_added - 1
+        if num_added == 0 do
+            send :master, :node_added
+        end
+        {:noreply, Map.put(map, :all_nodes_added, num_added)}
     end
 
 end
