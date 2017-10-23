@@ -54,7 +54,7 @@ defmodule PastryNode do
         {:noreply, map}
     end
 
-
+    # propagation, addme to your states
     def handle_cast({:add_me, sender_nodeid, sender_pid, proxid}, map) do
         #add in leafset
         leaf_set = Map.get(map, :leaf_set)
@@ -73,10 +73,22 @@ defmodule PastryNode do
         neigh_set = Map.get(map, :neigh_set)
         neigh_set = RoutingUtils.add_in_leaf_set(neigh_set, @l, proxid, sender_nodeid, sender_pid)
         map = Map.put(map, :neigh_set, neigh_set)
+        send sender_pid, :added
         {:noreply, map}
     end
 
-    #propgate yourself to all nodes in state
+    def handle_info(:added, map) do #catch unexpected messages
+        num_added = Map.get(map, :all_nodes_added)
+        num_added = num_added - 1
+        if num_added == 0 do
+            send :master, :node_added
+        else
+            {:noreply, Map.put(map, :all_nodes_added, num_added)}
+        end
+        
+    end
+
+    #propagate yourself to all nodes in state
     def handle_cast(:propagate, map) do
         curr_pid = self()
         if(Map.get(map, :leaf_set) != [] && Map.get(map, :neigh_set) != []) do
@@ -84,14 +96,17 @@ defmodule PastryNode do
             hex = Map.get(map, :nodeid)
             proxid = Map.get(map, :proxid)
             Enum.each(all_nodes, fn {_, pid} -> GenServer.cast pid, {:add_me, hex, curr_pid, proxid}  end)
+            {:noreply, Map.put(map, :all_nodes_added, length(all_nodes))}
         else
             IO.puts "Either leaf set or neighbourhood set are not populated. Waiting for them..."
             :timer.sleep(1000)
             GenServer.cast curr_pid, :propagate
+            {:noreply, map}
         end
+        
     end
 
-    #received neighbourhood set
+    #received neighbourhood set: from first node to new node
     def handle_cast({:neigh_set, neigh_set, {sender_proxid, sender_nodeid, sender_pid}}, map) do
         #Does not matter. at worst, the set will have random elements
         neigh_set_len = length(neigh_set)
@@ -110,14 +125,14 @@ defmodule PastryNode do
         {:noreply, Map.put(map, :neigh_set, neigh_set)}
     end
 
-    #received leaf set
+    #received leaf set: from terminal node to new node
     def handle_cast({:leaf_set, leaf_set, {sender_nodeid_int, sender_nodeid, sender_pid}}, map) do
         #receiver's leaf_set is empty
         leaf_set = RoutingUtils.add_in_leaf_set(leaf_set, @l, sender_nodeid_int, sender_nodeid, sender_pid)
         {:noreply, Map.put(map, :leaf_set, leaf_set)}
     end
 
-    #received routing table
+    #received routing table:from nodes in path to new node
     def handle_cast({:routing_table, routing_row, row_num, sender_nodeid, sender_pid, is_last}, map) do
         #1. add sender's info to routing table, will go in the row that just got added
         com_prefix_len = Utils.lcp([Map.get(map, :nodeid), sender_nodeid]) |> String.length

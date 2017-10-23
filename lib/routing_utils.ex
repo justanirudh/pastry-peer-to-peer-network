@@ -137,4 +137,15 @@ defmodule RoutingUtils do
         leaf_set
     end
 
+    def loop(ind, len) do
+        if(ind == len) do
+            :ok
+        else
+            receive do
+                :added -> loop(ind +1, len)
+            end
+        end
+
+    end
+
 end
