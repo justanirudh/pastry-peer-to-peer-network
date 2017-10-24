@@ -4,9 +4,17 @@ Team members: Anirudh Pathak, Vaibhav Yenamandra
 What is working: network join and routing
 What is the largest network you managed to deal with: 10000 nodes
 
-Note: The messages are NOT being sent per second. we found it too slow to test.
+Note: The messages are NOT being sent per second.
 
-Data structures used:
+##Output explaination
+new node id hex: ABC.. // New nodes being added to the pastry, one by one (network join)
+new node(s) added // All nodes added to the pastry
+peers activated. //All peers have started sending messages to each other
+Counting avg number of hops //now counting hops
+Msg num. [msgid]: num_hops = NUM // Ms number 0 took 2 hops to reach its destination
+Average number of hops is [NUM] //calculated average number of hops
+
+##Data structures used:
 
   LEAFSET
   [{hex_int1, hex1, <pid1>},{hex_int2,hex2,<pid2>, ....} ]
