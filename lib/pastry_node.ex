@@ -207,6 +207,7 @@ defmodule PastryNode do
                             GenServer.cast new_pid, {:routing_table, routing_row, com_prefix_len, curr_nodeid, curr_pid, :not_last}
                             #forward the nodeid to next node
                             GenServer.cast dist_pid, {:add_node, new_nodeid, new_pid, num_hops + 1}
+                            :sent
                         else
                             RoutingUtils.is_nodeid_send(map, new_nodeid, new_nodeid_int, com_prefix_len,num_hops, new_pid, curr_nodeid, curr_pid )
                         end
@@ -259,6 +260,7 @@ defmodule PastryNode do
                     if internal_tup != nil do
                         dist_pid = elem(internal_tup, 1)
                         GenServer.cast dist_pid, {:msg, key, val, num_hops + 1}
+                        :sent
                     else
                         RoutingUtils.is_send(map, key, key_int, com_prefix_len,val, num_hops)
                     end
@@ -267,7 +269,7 @@ defmodule PastryNode do
                 end
             end
 
-            if status == :current do
+            if status == :current do #I am the terminal node
                 send :master, {:num_hops, num_hops + 1}
             end
             {:noreply, map}
