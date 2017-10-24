@@ -46,26 +46,29 @@ end
   def main(args) do
     
     num = (Enum.at(args, 0) |> String.to_integer) #number of peers
-    num_reqs = Enum.at(args, 1) |> String.to_integer #number of requests each peer needs to make
-    self() |> Process.register(:master) #register master
-    #spawn 1 node
-    hex = :crypto.hash(:md5, Integer.to_string(1)) |> Base.encode16()
-    pid = elem(GenServer.start_link(PastryNode, %{:nodeid => hex, :proxid => 1, :leaf_set => [], :routing_table => %{}, :neigh_set => []}), 1)
-    
-    #add rest nodes
-    nodes = NetworkJoin.add_node_many([pid], 1, num - 1)
-
-    IO.puts "new node(s) added"
-
-    #activate nodes to start sending messages to each other
-    activate_peers(nodes, 0, num, num_reqs)
-
-    IO.puts "peers activated.\nCounting avg number of hops "
-
-    avg_num_hops = get_avg_num_hops(num_reqs * num, 0, 0)
-
-    IO.puts "Average number of hops is #{avg_num_hops}"
-
+    if num <= 1 do
+      IO.puts "number of nodes should be >= 1"
+    else
+      num_reqs = Enum.at(args, 1) |> String.to_integer #number of requests each peer needs to make
+      self() |> Process.register(:master) #register master
+      #spawn 1 node
+      hex = :crypto.hash(:md5, Integer.to_string(1)) |> Base.encode16()
+      pid = elem(GenServer.start_link(PastryNode, %{:nodeid => hex, :proxid => 1, :leaf_set => [], :routing_table => %{}, :neigh_set => []}), 1)
+      
+      #add rest nodes
+      nodes = NetworkJoin.add_node_many([pid], 1, num - 1)
+  
+      IO.puts "new node(s) added"
+  
+      #activate nodes to start sending messages to each other
+      activate_peers(nodes, 0, num, num_reqs)
+  
+      IO.puts "peers activated.\nCounting avg number of hops "
+  
+      avg_num_hops = get_avg_num_hops(num_reqs * num, 0, 0)
+  
+      IO.puts "Average number of hops is #{avg_num_hops}"
+    end
   end
 
 end
