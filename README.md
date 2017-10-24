@@ -2,7 +2,7 @@
 
 Team members: Anirudh Pathak, Vaibhav Yenamandra
 What is working: network join and routing (everything is working)
-What is the largest network you managed to deal with: 100,000 nodes (can handle more nodes but just takes more time)
+What is the largest network you managed to deal with: 100,000 nodes
 
 Note: The messages are NOT being sent per second.
 
